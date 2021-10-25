@@ -1,0 +1,275 @@
+<html class="" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Browser for M3O</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/motion-ui/1.2.3/motion-ui.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation-prototype.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/foundicons/3.0.0/foundation-icons.css" rel="stylesheet"
+        type="text/css">
+    <meta class="foundation-mq">
+    <style>
+        #tblMenu li.active {
+            border: solid 1px black;
+            border-radius: 5px;
+            background-color: #dccdc9;
+        }
+
+        #tblMenu li {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            margin-left: 0px;
+            padding-left: 10px;
+            line-height: 20px;
+            list-style: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="off-canvas position-left reveal-for-large is-transition-push is-closed" id="my-info" data-off-canvas=""
+        aria-hidden="true" data-e="j35pv6-e">
+        <div class="grid-y grid-padding-x" style="height: 100%;">
+            <br>
+            <div class="cell shrink">
+                <i class="fi-wrench" style="font-size:2rem;float:right"></i>
+            </div>
+            <br>
+            <div class="cell shrink">
+                <h5>DB API Key</h5>
+                <p><input id="txtApiKey" type="text" placeholder="Msahghsd73246Gvxsgahdsa=" /></p>
+            </div>
+            <div class="cell shrink">
+                <h5>Configure Tables</h5>
+                <p>Speficy a comma separated list of table names to use for queries</p>
+                <p><input id="txtTableNames" type="text" placeholder="users,roles,userroles" /></p>
+            </div>
+            <div class="cell auto">
+                <h5>Tables</h5>
+                <ul id="tblMenu">
+                    <!-- user tables will be added here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="js-off-canvas-overlay is-overlay-fixed"></div>
+
+    <div class="off-canvas-content" data-off-canvas-content="">
+        <div class="title-bar hide-for-large">
+            <div class="title-bar-left">
+                <button class="menu-icon" type="button" data-toggle="my-info" aria-expanded="false"
+                    aria-controls="my-info"></button>
+                <span class="title-bar-title">DB Browser for M3O</span>
+            </div>
+        </div>
+
+        <div class="callout primary">
+            <article class="grid-container">
+                <div class="">
+                    <h1 id="tableName">Table: </h1>
+                </div>
+            </article>
+        </div>
+
+        <article class="grid-container">
+            <div class="grid-x grid-margin-x">
+                <div class="small-12 cell">
+                    <table id="tblOutput"></table>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="grid-x grid-margin-x">
+                <div class="small-12 cell">
+                    <div id="pgNum" style="float:right">Page 1</div>
+                    <button type="button" class="button" id="btnPrev">Previous Page</button>
+                    <button type="button" class="button" id="btnNext">Next Page</button>
+                    <br>
+                    <span>
+                        Choose page: <input type="number" id="txtPageNumber" placeholder="1"
+                            style="width:100px;display:inline;" />
+                    </span>
+                    <button type="button" class="button" id="btnGo">Go to Page</button>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/motion-ui/1.2.3/motion-ui.min.js"></script>
+    <script src="toast.min.js"></script>
+    <script>
+        let _maxPage = 0;
+        let _curPage = 1;
+        let _tableName = '';
+        let _tables = [];
+        const _itemsPerPage = 25;
+
+        $(document).foundation();
+
+        $(document).ready(function() {
+            console.log("READY");
+            $("#txtApiKey").val(localStorage.getItem("ApiKey"));
+            $("#txtTableNames").val(localStorage.getItem("TableNames"));
+            loadTables();
+        });
+
+        $(document).on("click", "#tblMenu li", function () {
+            _tableName = $(this).text();
+            _curPage = 1;
+            loadTables(); // change active flag
+            loadPage();
+        });
+
+        $("#btnNext").on("click", function () {
+            if (_curPage < _maxPage) {
+                _curPage = _curPage + 1;
+                loadPage();
+            } else {
+                toast("There are no more pages in this table");
+            }
+        });
+
+        $("#btnPrev").on("click", function () {
+            if (_curPage != 1) {
+                _curPage = _curPage - 1;
+                loadPage();
+            } else {
+                toast("You are on the first page");
+            }
+        });
+
+        $("#txtTableNames").on("change", function () {
+            localStorage.setItem("TableNames", $("#txtTableNames").val());
+            loadTables();
+        });
+        $("#txtApiKey").on("change", function () {
+            localStorage.setItem("ApiKey", $("#txtApiKey").val());
+        });
+
+        $("#btnGo").on("click", function () {
+            let pgNum = $("txtPageNumber").val();
+            if (pgNum < 1 && pgNum > _maxPage) {
+                toast("Page number out of bounds");
+                pgNum = 1;
+            }
+            _curPage = pgNum;
+            loadPage();
+        });
+
+        function loadTables() {
+            _tables = $("#txtTableNames").val().split(",");
+            _tables = _tables.sort((a, b) => a.localeCompare(b));
+            $("#tblMenu").html("");
+            _tables.forEach(tbl => {
+                $("#tblMenu").append(`<li class="${((tbl == _tableName) ? "active" : "")}">${tbl}</li>`)
+            });
+        }
+
+        function loadPage() {
+            if (_tableName != '') {
+                $("#tableName").html(`Table: ${_tableName}`);
+                db_read();
+                db_count();
+            } else {
+                // no table selected, clear the screen
+                $("#tableName").html(`Table: `);
+                $("#tblOutpt").html(``);
+            }
+            $("#pgNum").html(`Page ${_curPage}`);
+        }
+
+        function toast(msg) {
+            const options = {
+                style: {
+                    main: {
+                        background: "#222",
+                        color: "#fff",
+                    },
+                },
+                settings: {
+                    duration: 2000,
+                }
+            };
+            iqwerty.toast.toast(msg, options);
+        }
+
+        function db_read() {
+            let apiKey = $("#txtApiKey").val();
+            let offset = (_curPage - 1) * _itemsPerPage;
+            var readApiCall = {
+                "url": "https://api.m3o.com/v1/db/Db/Read",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Micro-Namespace": "micro",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                "data": JSON.stringify({
+                    "limit": _itemsPerPage,
+                    "offset": offset,
+                    "table": `${_tableName}`,
+                }),
+            };
+
+            $.ajax(readApiCall).done(function (response) {
+                $("#tblOutput").html("<tbody></tbody>");
+                let records = JSON.parse(response).records;
+                let headerDone = false;
+                for (let i = 0; i < records.length; i++) {
+                    console.log(records[i]);
+                    let keys = Object.keys(records[i]);
+                    console.log(keys);
+                    if (!headerDone) {
+                        let html = "<tr>";
+                        for (let y = 0; y < keys.length; y++) {
+                            html += `<th>${keys[y]}</th>`;
+                        }
+                        html += "</tr>";
+                        $("#tblOutput").append(html);
+                        headerDone = true;
+                    }
+                    let html = "<tr>";
+                    for (let y = 0; y < keys.length; y++) {
+                        html += `<td>${records[i][keys[y]]}</td>`;
+                    }
+                    html += "</tr>";
+                    $("#tblOutput").append(html);
+                }
+                toast(`Loaded table '${_tableName}' page ${_curPage} `);
+            });
+        }
+
+        function db_count() {
+            let apiKey = $("#txtApiKey").val();
+            var countApiCall = {
+                "url": "https://api.m3o.com/v1/db/Db/Count",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Micro-Namespace": "micro",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                "data": JSON.stringify({ "table": `${_tableName}` }),
+            };
+
+            $.ajax(countApiCall).done(function (response) {
+                let count = JSON.parse(response).count;
+                _maxPage = Math.ceil(count/_itemsPerPage);
+            });
+        }
+
+    </script>
+</body>
+
+</html>
