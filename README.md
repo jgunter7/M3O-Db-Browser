@@ -5,7 +5,9 @@ A simple Db Browser for M3O
 
 Features
 
-- READ API call with pagination
+- READ API call
+- CREATE API call
+- UPDATE API call
 - More coming soon
 
 How to Run

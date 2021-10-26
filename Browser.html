@@ -122,12 +122,12 @@
         let _curPage = 1;
         let _tableName = '';
         let _tables = [];
+        let _idToDelete = undefined;
         const _itemsPerPage = 10;
 
         $(document).foundation();
 
         $(document).ready(function () {
-            console.log("READY");
             $("#txtApiKey").val(localStorage.getItem("ApiKey"));
             $("#txtTableNames").val(localStorage.getItem("TableNames"));
             loadTables();
@@ -237,6 +237,16 @@
             $("#json").val(prettyJson);
         }
 
+        function deleteRecord(id) {
+            if (_idToDelete == id) {
+                // TODO delete
+                toast("not implemented yet");
+            } else {
+                _idToDelete = id;
+                toast("Press delete again to delete this record permanently");
+            }
+        }
+
         function db_read() {
             let apiKey = $("#txtApiKey").val();
             let offset = (_curPage - 1) * _itemsPerPage;
@@ -276,7 +286,8 @@
                         html += `<td>${records[i][keys[y]]}`;
                         if (y == 0) {
                             let uuid = createUUID();
-                            html += `&nbsp;<i alt="copy" title="copy" class="fi-page-copy" onclick="loadJson('${uuid}')"></i>`;
+                            html += `&nbsp;&nbsp;<i alt="copy" title="copy" class="fi-page-copy" style="font-size:1.5rem" onclick="loadJson('${uuid}')"></i>`;
+                            html += `&nbsp;&nbsp;<i alt="del" title="del" class="fi-trash" style="font-size:1.5rem" onclick="delete('${records[i]["id"]}')"></i>`;
                             localStorage.setItem(uuid, JSON.stringify(records[i]));
                         }
                         html += "</td>";
