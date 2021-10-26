@@ -29,6 +29,10 @@
             list-style: none;
             cursor: pointer;
         }
+
+        th {
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -91,14 +95,21 @@
                     <div id="pgNum" style="float:right">Page 1</div>
                     <button type="button" class="button" id="btnPrev">Previous Page</button>
                     <button type="button" class="button" id="btnNext">Next Page</button>
-                    <br>
+                    &nbsp;&nbsp;
                     <span>
                         Choose page: <input type="number" id="txtPageNumber" placeholder="1"
                             style="width:100px;display:inline;" />
                     </span>
-                    <button type="button" class="button" id="btnGo">Go to Page</button>
+                    <button type="button" class="button" id="btnGo" style="margin-top:13px;margin-left:5px;">Go to
+                        Page</button>
                 </div>
             </div>
+
+            <hr>
+
+            <textarea id="json" style="width:100%;height:250px;"></textarea>
+            <button id="btnPretty" class="button" type="button">Pretty-ify JSON</button>
+            <!--<button id="btnCreate" class="button success" type="button">Create New Record</button>-->
         </article>
     </div>
 
@@ -115,7 +126,7 @@
 
         $(document).foundation();
 
-        $(document).ready(function() {
+        $(document).ready(function () {
             console.log("READY");
             $("#txtApiKey").val(localStorage.getItem("ApiKey"));
             $("#txtTableNames").val(localStorage.getItem("TableNames"));
@@ -165,6 +176,17 @@
             loadPage();
         });
 
+        $("#btnCreate").on("click", function () {
+            let json = $("#json").val();
+            // TODO create record
+        });
+
+        $("#btnPretty").on("click", function () {
+            let json = $("#json").val();
+            let prettyJson = JSON.stringify(JSON.parse(json), undefined, 2);
+            $("#json").val(prettyJson);
+        });
+
         function loadTables() {
             _tables = $("#txtTableNames").val().split(",");
             _tables = _tables.sort((a, b) => a.localeCompare(b));
@@ -202,6 +224,12 @@
             iqwerty.toast.toast(msg, options);
         }
 
+        function loadJson(uuid) {
+            let json = localStorage.getItem(uuid);
+            let prettyJson = JSON.stringify(JSON.parse(json), undefined, 2);
+            $("#json").val(prettyJson);
+        }
+
         function db_read() {
             let apiKey = $("#txtApiKey").val();
             let offset = (_curPage - 1) * _itemsPerPage;
@@ -226,9 +254,7 @@
                 let records = JSON.parse(response).records;
                 let headerDone = false;
                 for (let i = 0; i < records.length; i++) {
-                    console.log(records[i]);
                     let keys = Object.keys(records[i]);
-                    console.log(keys);
                     if (!headerDone) {
                         let html = "<tr>";
                         for (let y = 0; y < keys.length; y++) {
@@ -240,7 +266,13 @@
                     }
                     let html = "<tr>";
                     for (let y = 0; y < keys.length; y++) {
-                        html += `<td>${records[i][keys[y]]}</td>`;
+                        html += `<td>${records[i][keys[y]]}`;
+                        if (y == 0) {
+                            let uuid = createUUID();
+                            html += `&nbsp;<i alt="copy" title="copy" class="fi-page-copy" onclick="loadJson('${uuid}')"></i>`;
+                            localStorage.setItem(uuid, JSON.stringify(records[i]));
+                        }
+                        html += "</td>";
                     }
                     html += "</tr>";
                     $("#tblOutput").append(html);
@@ -265,7 +297,14 @@
 
             $.ajax(countApiCall).done(function (response) {
                 let count = JSON.parse(response).count;
-                _maxPage = Math.ceil(count/_itemsPerPage);
+                _maxPage = Math.ceil(count / _itemsPerPage);
+            });
+        }
+
+        function createUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
             });
         }
 
