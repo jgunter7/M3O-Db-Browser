@@ -109,7 +109,7 @@
 
             <textarea id="json" style="width:100%;height:250px;"></textarea>
             <button id="btnPretty" class="button" type="button">Pretty-ify JSON</button>
-            <!--<button id="btnCreate" class="button success" type="button">Create New Record</button>-->
+            <button id="btnCreate" class="button success" type="button">Create/Update Record</button>
         </article>
     </div>
 
@@ -122,7 +122,7 @@
         let _curPage = 1;
         let _tableName = '';
         let _tables = [];
-        const _itemsPerPage = 25;
+        const _itemsPerPage = 10;
 
         $(document).foundation();
 
@@ -168,7 +168,7 @@
 
         $("#btnGo").on("click", function () {
             let pgNum = $("txtPageNumber").val();
-            if (pgNum < 1 && pgNum > _maxPage) {
+            if (pgNum == undefined || pgNum < 1 || pgNum > _maxPage) {
                 toast("Page number out of bounds");
                 pgNum = 1;
             }
@@ -178,7 +178,14 @@
 
         $("#btnCreate").on("click", function () {
             let json = $("#json").val();
-            // TODO create record
+            let jsonObj = JSON.parse(json);
+            if (jsonObj["id"] == undefined) {
+                // CREATE new record
+                db_create(jsonObj);
+            } else {
+                // UPDATE existing record
+                db_update(jsonObj);
+            }
         });
 
         $("#btnPretty").on("click", function () {
@@ -218,7 +225,7 @@
                     },
                 },
                 settings: {
-                    duration: 2000,
+                    duration: 1000,
                 }
             };
             iqwerty.toast.toast(msg, options);
@@ -278,6 +285,46 @@
                     $("#tblOutput").append(html);
                 }
                 toast(`Loaded table '${_tableName}' page ${_curPage} `);
+            });
+        }
+
+        function db_update(jsonObj) {
+            let apiKey = $("#txtApiKey").val();
+            var updateApiCall = {
+                "url": "https://api.m3o.com/v1/db/Db/Update",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Micro-Namespace": "micro",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                "data": JSON.stringify({ "record": jsonObj, "table": `${_tableName}` }),
+            };
+
+            $.ajax(updateApiCall).done(function (response) {
+                toast("Record updated");
+                loadPage();
+            });
+        }
+
+        function db_create(jsonObj) {
+            let apiKey = $("#txtApiKey").val();
+            var createApiCall = {
+                "url": "https://api.m3o.com/v1/db/Db/Create",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Micro-Namespace": "micro",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                "data": JSON.stringify({ "record": jsonObj, "table": `${_tableName}` }),
+            };
+
+            $.ajax(createApiCall).done(function (response) {
+                toast("Record created");
+                loadPage();
             });
         }
 
