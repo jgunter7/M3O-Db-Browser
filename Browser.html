@@ -40,6 +40,42 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        .modal {
+            position: fixed;
+            z-index: 999;
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+            background-color: Black;
+            filter: alpha(opacity=60);
+            opacity: 0.6;
+            -moz-opacity: 0.8;
+        }
+
+        .center {
+            z-index: 1000;
+            margin: 300px auto;
+            padding: 10px;
+            width: 130px;
+            height: 130px;
+            background-color: White;
+            border-radius: 10px;
+            filter: alpha(opacity=100);
+            opacity: 1;
+            -moz-opacity: 1;
+        }
+
+        .center img {
+            margin-top:22px;
+            margin-bottom: auto;
+            margin-left: auto;
+            margin-right:auto;
+            display:block;
+            height: 64px;
+            width: 64px;
+        }
     </style>
 </head>
 
@@ -122,6 +158,13 @@
         </article>
     </div>
 
+    <!-- loader spinner -->
+    <div class="modal" style="display: none">
+        <div class="center">
+            <img alt="" src="loader.gif" />
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/motion-ui/1.2.3/motion-ui.min.js"></script>
@@ -141,6 +184,14 @@
             $("#txtTableNames").val(localStorage.getItem("TableNames"));
             loadTables();
         });
+
+        function loading() {
+            $(".modal").show();
+        }
+
+        function loadingDone() {
+            $(".modal").hide();
+        }
 
         $(document).on("click", "#tblMenu li", function () {
             _tableName = $(this).text();
@@ -207,8 +258,6 @@
 
             $("#tblOutput td").each(function () {
                 if ($(this)[0].cellIndex == idx) {
-                    console.log($(this)[0].cellIndex);
-                    console.log($(this)[0].innerHTML);
                     let id = $(this)[0].innerHTML;
                     let lio = id.lastIndexOf("</i>&nbsp;&nbsp;");
                     if (lio <= 0) {
@@ -295,7 +344,9 @@
                 "data": JSON.stringify({ "id": `${id}`, "table": `${_tableName}` }),
             };
 
+            loading();
             $.ajax(settings).done(function (response) {
+                loadingDone();
                 toast("Record deleted");
                 if (loadAfter) loadPage();
             });
@@ -320,6 +371,7 @@
                 }),
             };
 
+            loading();
             $.ajax(readApiCall).done(function (response) {
                 $("#tblOutput").html("<tbody></tbody>");
                 let records = JSON.parse(response).records;
@@ -350,6 +402,7 @@
                     html += "</tr>";
                     $("#tblOutput").append(html);
                 }
+                loadingDone();
                 toast(`Loaded table '${_tableName}' page ${_curPage} `);
             });
         }
@@ -368,7 +421,9 @@
                 "data": JSON.stringify({ "record": jsonObj, "table": `${_tableName}` }),
             };
 
+            loading();
             $.ajax(updateApiCall).done(function (response) {
+                loadingDone();
                 toast("Record updated");
                 loadPage();
             });
@@ -388,7 +443,9 @@
                 "data": JSON.stringify({ "record": jsonObj, "table": `${_tableName}` }),
             };
 
+            loading();
             $.ajax(createApiCall).done(function (response) {
+                loadingDone();
                 toast("Record created");
                 loadPage();
             });

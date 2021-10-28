@@ -8,7 +8,7 @@ Features
 - READ API call
 - CREATE API call
 - UPDATE API call
-- More coming soon
+- DELETE API call
 
 How to Run
 
