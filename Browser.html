@@ -33,6 +33,13 @@
         th {
             text-align: left;
         }
+
+        #tblOutput td {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 
@@ -98,10 +105,12 @@
                     &nbsp;&nbsp;
                     <span>
                         Choose page: <input type="number" id="txtPageNumber" placeholder="1"
-                            style="width:100px;display:inline;" />
+                            style="width:100px;display:inline;" value="1" />
                     </span>
                     <button type="button" class="button" id="btnGo" style="margin-top:13px;margin-left:5px;">Go to
                         Page</button>
+                    <button type="button" class="button warning" id="btnDelete"
+                        style="margin-top:13px;margin-left:5px;">Delete Page</button>
                 </div>
             </div>
 
@@ -167,7 +176,7 @@
         });
 
         $("#btnGo").on("click", function () {
-            let pgNum = $("txtPageNumber").val();
+            let pgNum = $("#txtPageNumber").val();
             if (pgNum == undefined || pgNum < 1 || pgNum > _maxPage) {
                 toast("Page number out of bounds");
                 pgNum = 1;
@@ -188,6 +197,29 @@
             }
         });
 
+        $("#btnDelete").on("click", function () {
+            let idx = 0;
+            $("#tblOutput th").each(function () {
+                if ($(this)[0].innerHTML != "id") {
+                    idx = idx + 1;
+                }
+            });
+
+            $("#tblOutput td").each(function () {
+                if ($(this)[0].cellIndex == idx) {
+                    console.log($(this)[0].cellIndex);
+                    console.log($(this)[0].innerHTML);
+                    let id = $(this)[0].innerHTML;
+                    let lio = id.lastIndexOf("</i>&nbsp;&nbsp;");
+                    if (lio <= 0) {
+                        deleteRecordImpl(id, false);
+                    } else {
+                        deleteRecordImpl(id.substring(lio + 16, id.length), false);
+                    }
+                }
+            });
+        });
+
         $("#btnPretty").on("click", function () {
             let json = $("#json").val();
             let prettyJson = JSON.stringify(JSON.parse(json), undefined, 2);
@@ -204,6 +236,9 @@
         }
 
         function loadPage() {
+            localStorage.clear();
+            localStorage.setItem("TableNames", $("#txtTableNames").val());
+            localStorage.setItem("ApiKey", $("#txtApiKey").val());
             if (_tableName != '') {
                 $("#tableName").html(`Table: ${_tableName}`);
                 db_read();
@@ -239,12 +274,31 @@
 
         function deleteRecord(id) {
             if (_idToDelete == id) {
-                // TODO delete
-                toast("not implemented yet");
+                deleteRecordImpl(id);
             } else {
                 _idToDelete = id;
                 toast("Press delete again to delete this record permanently");
             }
+        }
+
+        function deleteRecordImpl(id, loadAfter = true) {
+            let apiKey = $("#txtApiKey").val();
+            var settings = {
+                "url": "https://api.m3o.com/v1/db/Db/Delete",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Micro-Namespace": "micro",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                "data": JSON.stringify({ "id": `${id}`, "table": `${_tableName}` }),
+            };
+
+            $.ajax(settings).done(function (response) {
+                toast("Record deleted");
+                if (loadAfter) loadPage();
+            });
         }
 
         function db_read() {
@@ -283,13 +337,14 @@
                     }
                     let html = "<tr>";
                     for (let y = 0; y < keys.length; y++) {
-                        html += `<td>${records[i][keys[y]]}`;
+                        html += "<td>";
                         if (y == 0) {
                             let uuid = createUUID();
-                            html += `&nbsp;&nbsp;<i alt="copy" title="copy" class="fi-page-copy" style="font-size:1.5rem" onclick="loadJson('${uuid}')"></i>`;
-                            html += `&nbsp;&nbsp;<i alt="del" title="del" class="fi-trash" style="font-size:1.5rem" onclick="delete('${records[i]["id"]}')"></i>`;
+                            html += `<i alt="copy" title="copy" class="fi-page-copy" style="font-size:1.5rem" onclick="loadJson('${uuid}')"></i>`;
+                            html += `&nbsp;&nbsp;<i alt="del" title="del" class="fi-trash" style="font-size:1.5rem" onclick="deleteRecord('${records[i]["id"]}')"></i>&nbsp;&nbsp;`;
                             localStorage.setItem(uuid, JSON.stringify(records[i]));
                         }
+                        html += `${records[i][keys[y]]}`;
                         html += "</td>";
                     }
                     html += "</tr>";
