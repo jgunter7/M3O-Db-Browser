@@ -1,0 +1,72 @@
+#tblMenu li.active {
+    border: solid 1px black;
+    border-radius: 5px;
+    background-color: #dccdc9;
+}
+
+#tblMenu li {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-left: 0px;
+    padding-left: 10px;
+    line-height: 20px;
+    list-style: none;
+    cursor: pointer;
+}
+
+th {
+    text-align: left;
+}
+
+#tblOutput td {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal {
+    position: fixed;
+    z-index: 999;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background-color: Black;
+    filter: alpha(opacity=60);
+    opacity: 0.3;
+    -moz-opacity: 0.8;
+}
+
+.center {
+    z-index: 1000;
+    margin: 300px auto;
+    padding: 10px;
+    width: 130px;
+    height: 130px;
+    background-color: White;
+    border-radius: 10px;
+    filter: alpha(opacity=100);
+    opacity: 1;
+    -moz-opacity: 1;
+}
+
+.center img {
+    margin-top: 22px;
+    margin-bottom: auto;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    height: 64px;
+    width: 64px;
+}
+
+.mt13 {
+    margin-top: 13px;
+}
+
+.ml5 {
+    margin-left: 5px;
+}
